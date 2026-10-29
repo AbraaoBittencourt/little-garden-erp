@@ -1,0 +1,10 @@
+import type { Role } from './types'
+export const D: Role[] = ['direcao']
+export const DS: Role[] = ['direcao', 'secretaria']
+export const DF: Role[] = ['direcao', 'financeiro']
+export const DC: Role[] = ['direcao', 'coordenacao']
+export const DSC: Role[] = ['direcao', 'secretaria', 'coordenacao']
+export const DSF: Role[] = ['direcao', 'secretaria', 'financeiro']
+export const STAFF: Role[] = ['direcao', 'secretaria', 'financeiro', 'coordenacao']
+export const PED: Role[] = ['direcao', 'coordenacao', 'professor']
+export const ACADEMIC: Role[] = ['direcao', 'secretaria', 'coordenacao', 'professor']

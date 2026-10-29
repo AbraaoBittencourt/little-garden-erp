@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { font-family: 'Nunito Sans', system-ui, sans-serif; color: #354735; background: #F7F3ED; }
+  h1, h2, h3, h4 { font-family: 'Poppins', system-ui, sans-serif; }
+  :focus-visible { outline: 2px solid #B69A62; outline-offset: 2px; }
+}
+@layer components {
+  .card { @apply rounded-card bg-white shadow-card; }
+  .input { @apply w-full rounded-xl border border-nude bg-white px-3.5 py-2.5 text-sm text-forest placeholder:text-muted/70 focus:border-olive focus:outline-none focus:ring-2 focus:ring-olive/20 disabled:bg-cream; }
+  .label { @apply mb-1.5 block text-sm font-semibold text-forest; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-primary { @apply btn bg-forest text-white hover:bg-olive; }
+  .btn-secondary { @apply btn border border-nude bg-white text-forest hover:bg-cream; }
+  .btn-danger { @apply btn bg-red-700 text-white hover:bg-red-800; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
