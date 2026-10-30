@@ -14,6 +14,9 @@ export function downloadFile(name: string, content: string | Blob, mime = 'text/
   a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove()
   setTimeout(() => URL.revokeObjectURL(a.href), 2000)
 }
+export function exportCSV(name: string, cols: ExportCol[], rows: Record<string, unknown>[]) {
+  downloadFile(`${name.endsWith('.csv') ? name : `${name}.csv`}`, toCSV(cols, rows))
+}
 export function parseCSV(text: string): string[][] {
   const t = text.replace(/^\ufeff/, '')
   const first = t.split(/\r?\n/)[0] ?? ''

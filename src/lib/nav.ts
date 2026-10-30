@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, GraduationCap, Users, ClipboardList, School, CalendarCheck, BookOpenCheck, Briefcase,
-  Wallet, Receipt, HandCoins, FolderOpen, Megaphone, BarChart3, ShieldCheck, Settings, History, Baby, type LucideIcon,
+  Wallet, Receipt, HandCoins, FolderOpen, Megaphone, BarChart3, ShieldCheck, Settings, History, Baby,
+  Shirt, RefreshCw, type LucideIcon,
 } from 'lucide-react'
 import type { Role } from './types'
 
@@ -16,6 +17,8 @@ export const NAV: NavGroup[] = [
   ]},
   { title: 'Gestão escolar', items: [
     { to: '/alunos', label: 'Alunos', icon: GraduationCap, roles: ['direcao', 'secretaria', 'coordenacao', 'professor'], stage: 1, ready: true },
+    { to: '/rematricula', label: 'Rematrícula 2027', icon: RefreshCw, roles: ['direcao', 'secretaria'], stage: 2, ready: true },
+    { to: '/fardamentos-materiais', label: 'Fardamentos e Materiais', icon: Shirt, roles: ['direcao', 'secretaria'], stage: 2, ready: true },
     { to: '/responsaveis', label: 'Responsáveis', icon: Users, roles: ['direcao', 'secretaria'], stage: 1, ready: true },
     { to: '/matriculas', label: 'Matrículas', icon: ClipboardList, roles: ['direcao', 'secretaria'], stage: 1, ready: true },
     { to: '/turmas', label: 'Turmas', icon: School, roles: ['direcao', 'secretaria', 'coordenacao', 'professor'], stage: 1, ready: true },
@@ -26,9 +29,10 @@ export const NAV: NavGroup[] = [
     { to: '/pedagogico', label: 'Pedagógico', icon: BookOpenCheck, roles: ['direcao', 'coordenacao', 'professor'], stage: 1, ready: true },
   ]},
   { title: 'Financeiro', items: [
-    { to: '/financeiro', label: 'Financeiro', icon: Wallet, roles: ['direcao', 'financeiro'], stage: 1, ready: true },
-    { to: '/contas-a-pagar', label: 'Contas a pagar', icon: Receipt, roles: ['direcao', 'financeiro'], stage: 1, ready: true },
-    { to: '/contas-a-receber', label: 'Contas a receber', icon: HandCoins, roles: ['direcao', 'financeiro', 'secretaria'], stage: 1, ready: true },
+    // REGRA ESPECÍFICA: O módulo Financeiro e todas as suas subpáginas são estritamente exclusivos da Direção
+    { to: '/financeiro', label: 'Financeiro', icon: Wallet, roles: ['direcao'], stage: 1, ready: true },
+    { to: '/contas-a-pagar', label: 'Contas a pagar', icon: Receipt, roles: ['direcao'], stage: 1, ready: true },
+    { to: '/contas-a-receber', label: 'Contas a receber', icon: HandCoins, roles: ['direcao'], stage: 1, ready: true },
   ]},
   { title: 'Operação', items: [
     { to: '/documentos', label: 'Documentos', icon: FolderOpen, roles: ['direcao', 'secretaria'], stage: 1, ready: true },

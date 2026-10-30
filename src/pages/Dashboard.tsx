@@ -6,11 +6,14 @@ import type { DashboardData } from '@/lib/types'
 import { formatBRL, formatDateTime, MONTHS, MONTHS_SHORT } from '@/lib/format'
 import { ErrorBox, PageHeader, StatCard } from '@/components/ui'
 import { Loading } from '@/components/ProtectedRoute'
+import { useAuth } from '@/contexts/AuthContext'
 
 const COLORS = ['#687653', '#B69A62', '#354735', '#E8D8C8', '#73776F']
 interface Opt { id: string; name: string }
 
 export default function Dashboard() {
+  const { hasRole } = useAuth()
+  const isDirecao = hasRole('direcao')
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear()); const [month, setMonth] = useState(now.getMonth() + 1)
   const [stage, setStage] = useState(''); const [klass, setKlass] = useState('')
@@ -69,23 +72,29 @@ export default function Dashboard() {
             <StatCard label="Matrículas confirmadas" value={d.confirmed_enrollments} hint={`Ano letivo ${year}`} icon={ClipboardCheck} />
             <StatCard label="Professores" value={d.teachers_active} icon={Briefcase} />
             <StatCard label="Funcionários" value={d.employees_active} icon={Briefcase} />
-            <StatCard label="Receita recebida" value={formatBRL(d.revenue_received)} icon={TrendingUp} tone="good" />
-            <StatCard label="Receita prevista" value={formatBRL(d.revenue_expected)} icon={Wallet} />
-            <StatCard label="Despesas do mês" value={formatBRL(d.expenses_month)} icon={TrendingDown} />
-            <StatCard label="Resultado do período" value={formatBRL(result)} hint="Recebido menos despesas" icon={Receipt} tone={result < 0 ? 'bad' : 'good'} />
-            <StatCard label="Mensalidades em atraso" value={d.overdue_count} hint={formatBRL(d.overdue_amount)} icon={AlertTriangle} tone={d.overdue_count ? 'bad' : 'default'} />
-            <StatCard label="Taxa de inadimplência" value={d.delinquency_rate == null ? '—' : `${d.delinquency_rate.toString().replace('.', ',')}%`} hint={d.delinquency_rate == null ? 'Sem cobranças vencidas no mês' : 'Sobre cobranças vencidas no mês'} icon={Percent} />
+            {isDirecao && (
+              <>
+                <StatCard label="Receita recebida" value={formatBRL(d.revenue_received)} icon={TrendingUp} tone="good" />
+                <StatCard label="Receita prevista" value={formatBRL(d.revenue_expected)} icon={Wallet} />
+                <StatCard label="Despesas do mês" value={formatBRL(d.expenses_month)} icon={TrendingDown} />
+                <StatCard label="Resultado do período" value={formatBRL(result)} hint="Recebido menos despesas" icon={Receipt} tone={result < 0 ? 'bad' : 'good'} />
+                <StatCard label="Mensalidades em atraso" value={d.overdue_count} hint={formatBRL(d.overdue_amount)} icon={AlertTriangle} tone={d.overdue_count ? 'bad' : 'default'} />
+                <StatCard label="Taxa de inadimplência" value={d.delinquency_rate == null ? '—' : `${d.delinquency_rate.toString().replace('.', ',')}%`} hint={d.delinquency_rate == null ? 'Sem cobranças vencidas no mês' : 'Sobre cobranças vencidas no mês'} icon={Percent} />
+              </>
+            )}
             <StatCard label="Pendências de documentação" value={d.pending_documents} icon={FileWarning} />
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <ChartCard title="Receitas versus despesas" empty={!d.series_revenue_expenses.some((r) => r.receitas || r.despesas)}>
-              <BarChart data={d.series_revenue_expenses.map((r) => ({ ...r, mes: MONTHS_SHORT[r.month - 1] }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E8D8C8" /><XAxis dataKey="mes" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} width={60} />
-                <Tooltip formatter={(v: number) => formatBRL(v)} /><Legend />
-                <Bar dataKey="receitas" name="Receitas" fill="#687653" radius={[6, 6, 0, 0]} /><Bar dataKey="despesas" name="Despesas" fill="#B69A62" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ChartCard>
+            {isDirecao && (
+              <ChartCard title="Receitas versus despesas" empty={!d.series_revenue_expenses.some((r) => r.receitas || r.despesas)}>
+                <BarChart data={d.series_revenue_expenses.map((r) => ({ ...r, mes: MONTHS_SHORT[r.month - 1] }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E8D8C8" /><XAxis dataKey="mes" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} width={60} />
+                  <Tooltip formatter={(v: number) => formatBRL(v)} /><Legend />
+                  <Bar dataKey="receitas" name="Receitas" fill="#687653" radius={[6, 6, 0, 0]} /><Bar dataKey="despesas" name="Despesas" fill="#B69A62" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ChartCard>
+            )}
             <ChartCard title="Evolução do número de alunos" empty={!d.series_students.some((r) => r.alunos)}>
               <LineChart data={d.series_students.map((r) => ({ ...r, mes: MONTHS_SHORT[r.month - 1] }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E8D8C8" /><XAxis dataKey="mes" tick={{ fontSize: 12 }} /><YAxis allowDecimals={false} tick={{ fontSize: 12 }} width={40} />
@@ -98,12 +107,14 @@ export default function Dashboard() {
                 <Tooltip /><Bar dataKey="total" name="Matrículas" fill="#687653" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ChartCard>
-            <ChartCard title="Inadimplência ao longo dos meses (%)" empty={!d.series_delinquency.some((r) => r.taxa != null)}>
-              <LineChart data={d.series_delinquency.map((r) => ({ ...r, mes: MONTHS_SHORT[r.month - 1] }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E8D8C8" /><XAxis dataKey="mes" tick={{ fontSize: 12 }} /><YAxis unit="%" tick={{ fontSize: 12 }} width={44} />
-                <Tooltip formatter={(v: number) => `${v}%`} /><Line type="monotone" dataKey="taxa" name="Inadimplência" stroke="#B69A62" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
-              </LineChart>
-            </ChartCard>
+            {isDirecao && (
+              <ChartCard title="Inadimplência ao longo dos meses (%)" empty={!d.series_delinquency.some((r) => r.taxa != null)}>
+                <LineChart data={d.series_delinquency.map((r) => ({ ...r, mes: MONTHS_SHORT[r.month - 1] }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E8D8C8" /><XAxis dataKey="mes" tick={{ fontSize: 12 }} /><YAxis unit="%" tick={{ fontSize: 12 }} width={44} />
+                  <Tooltip formatter={(v: number) => `${v}%`} /><Line type="monotone" dataKey="taxa" name="Inadimplência" stroke="#B69A62" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
+                </LineChart>
+              </ChartCard>
+            )}
             <ChartCard title="Alunos por etapa de ensino" empty={d.students_by_stage.length === 0}>
               <PieChart>
                 <Pie data={d.students_by_stage} dataKey="total" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={2}>

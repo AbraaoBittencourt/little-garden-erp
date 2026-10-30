@@ -24,6 +24,8 @@ import CommunicationPage from '@/pages/Communication'
 import ReportsPage from '@/pages/Reports'
 import GuardianPortal from '@/pages/GuardianPortal'
 import AuditPage from '@/pages/Audit'
+import RematriculaPage from '@/pages/Rematricula'
+import SchoolItemsPage from '@/pages/SchoolItems'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Role } from '@/lib/types'
 import { ACADEMIC, DF, DS, DSC, DSF, PED, STAFF } from '@/lib/roles'
@@ -52,6 +54,8 @@ export default function App() {
             <Route index element={<Home />} />
             {guarded(ACADEMIC, '/alunos', <StudentsPage />)}
             {guarded(['direcao', 'secretaria', 'financeiro', 'coordenacao', 'professor'], '/alunos/:id', <StudentDetail />)}
+            {guarded(DS, '/rematricula', <RematriculaPage />)}
+            {guarded(DS, '/fardamentos-materiais', <SchoolItemsPage />)}
             {guarded(DS, '/responsaveis', <GuardiansPage />)}
             {guarded(DS, '/matriculas', <EnrollmentsPage />)}
             {guarded(DS, '/matriculas/nova', <EnrollmentWizard />)}
@@ -59,9 +63,10 @@ export default function App() {
             {guarded(DSC, '/equipe', <StaffPage />)}
             {guarded(ACADEMIC, '/frequencia', <AttendancePage />)}
             {guarded(PED, '/pedagogico', <PedagogicalPage />)}
-            {guarded(DF, '/financeiro', <FinancePage />)}
-            {guarded(DF, '/contas-a-pagar', <PayablesPage />)}
-            {guarded(DSF, '/contas-a-receber', <ReceivablesPage />)}
+            {/* REGRA ESPECÍFICA: Módulo financeiro estritamente exclusivo da Direção */}
+            {guarded(['direcao'], '/financeiro', <FinancePage />)}
+            {guarded(['direcao'], '/contas-a-pagar', <PayablesPage />)}
+            {guarded(['direcao'], '/contas-a-receber', <ReceivablesPage />)}
             {guarded(DS, '/documentos', <DocumentsPage />)}
             {guarded(DSC, '/comunicacao', <CommunicationPage />)}
             {guarded(['direcao', 'secretaria', 'financeiro', 'coordenacao', 'professor'], '/relatorios', <ReportsPage />)}

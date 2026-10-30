@@ -47,7 +47,7 @@ export default function StudentDetail() {
         { id: 'dados', label: 'Dados pessoais', content: <PersonalData st={st} canEdit={ds} onSaved={reload} /> },
         { id: 'resp', label: 'Responsáveis', hidden: !hasRole(...DSF, 'coordenacao'), content: <GuardiansTab sid={sid} canEdit={ds} /> },
         { id: 'mat', label: 'Matrícula', hidden: !hasRole(...DS, 'coordenacao', 'financeiro'), content: <EnrollmentTab sid={sid} canEdit={ds} /> },
-        { id: 'fin', label: 'Financeiro', hidden: !hasRole(...DSF), content: <FinanceTab sid={sid} /> },
+        { id: 'fin', label: 'Financeiro', hidden: !hasRole('direcao'), content: <FinanceTab sid={sid} /> },
         { id: 'freq', label: 'Frequência', hidden: !hasRole(...DS, 'coordenacao', 'professor'), content: <AttendanceTab sid={sid} /> },
         { id: 'docs', label: 'Documentos', hidden: !ds, content: <DocsTab sid={sid} /> },
         { id: 'ped', label: 'Informações pedagógicas', hidden: !hasRole(...PED), content: <PedTab sid={sid} /> },

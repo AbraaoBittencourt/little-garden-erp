@@ -48,16 +48,16 @@ const DEFS: Def[] = [
   { id: 'pedagogicos', group: 'Acadêmico', title: 'Relatórios pedagógicos', roles: ['direcao', 'coordenacao', 'professor'], filters: ['period', 'class'], run: async (f) => {
     const d = await fetchAll<Row>((a, b) => { let q: any = supabase.from('pedagogical_reports').select('period, content, is_sensitive, created_at, student:students(full_name), class:classes(name)').order('created_at', { ascending: false }); q = period(q, 'created_at', f.to ? { ...f, to: f.to + 'T23:59:59' } : f); if (f.classId) q = q.eq('class_id', f.classId); return q.range(a, b) })
     return { cols: [{ key: 'aluno', label: 'Aluno' }, { key: 'turma', label: 'Turma' }, { key: 'periodo', label: 'Período' }, { key: 'sensivel', label: 'Sigilo' }, { key: 'texto', label: 'Relatório' }], rows: d.map((r) => ({ aluno: r.student?.full_name, turma: r.class?.name ?? '', periodo: r.period ?? formatDate(r.created_at), sensivel: r.is_sensitive ? 'Sensível' : '', texto: r.content })) } } },
-  { id: 'mensalidades', group: 'Financeiro', title: 'Mensalidades pagas e pendentes', roles: DSF, filters: ['period', 'class', 'status'], statuses: INVOICE_LABEL, run: async (f) => {
+  { id: 'mensalidades', group: 'Financeiro', title: 'Mensalidades pagas e pendentes', roles: ['direcao'], filters: ['period', 'class', 'status'], statuses: INVOICE_LABEL, run: async (f) => {
     const d = (await invoiceRows(f)).map((i) => ({ i, s: derivedInvoiceStatus(i.status, i.due_date) })).filter((x) => !f.status || x.s === f.status)
     return { cols: [{ key: 'aluno', label: 'Aluno' }, { key: 'turma', label: 'Turma' }, { key: 'venc', label: 'Vencimento' }, { key: 'valor', label: 'Valor' }, { key: 'pago', label: 'Pago' }, { key: 'status', label: 'Situação' }], rows: d.map(({ i, s }) => ({ aluno: i.students?.full_name, turma: i.students?.classes?.name ?? '', venc: formatDate(i.due_date), valor: brl(i.total), pago: brl(paidOf(i)), status: INVOICE_LABEL[s] })) } } },
-  { id: 'inadimplencia', group: 'Financeiro', title: 'Inadimplência', roles: DSF, filters: ['period', 'class'], run: async (f) => {
+  { id: 'inadimplencia', group: 'Financeiro', title: 'Inadimplência', roles: ['direcao'], filters: ['period', 'class'], run: async (f) => {
     const d = await invoiceRows(f, true)
     return { cols: [{ key: 'aluno', label: 'Aluno' }, { key: 'turma', label: 'Turma' }, { key: 'venc', label: 'Vencimento' }, { key: 'dias', label: 'Dias de atraso' }, { key: 'saldo', label: 'Saldo devedor' }], rows: d.map((i) => ({ aluno: i.students?.full_name, turma: i.students?.classes?.name ?? '', venc: formatDate(i.due_date), dias: Math.floor((Date.now() - new Date(i.due_date).getTime()) / 86400000), saldo: brl(Number(i.total) - paidOf(i)) })) } } },
-  { id: 'contas_pagar', group: 'Financeiro', title: 'Contas a pagar', roles: ['direcao', 'financeiro'], filters: ['period', 'status'], statuses: { pendente: 'Pendente', pago: 'Pago', cancelado: 'Cancelado' }, run: async (f) => {
+  { id: 'contas_pagar', group: 'Financeiro', title: 'Contas a pagar', roles: ['direcao'], filters: ['period', 'status'], statuses: { pendente: 'Pendente', pago: 'Pago', cancelado: 'Cancelado' }, run: async (f) => {
     const d = await fetchAll<Row>((a, b) => { let q: any = supabase.from('expenses').select('description, amount, due_date, paid_on, status, supplier:suppliers(name), category:expense_categories(name)').order('due_date'); q = period(q, 'due_date', f); if (f.status) q = q.eq('status', f.status); return q.range(a, b) })
     return { cols: [{ key: 'venc', label: 'Vencimento' }, { key: 'desc', label: 'Descrição' }, { key: 'forn', label: 'Fornecedor' }, { key: 'cat', label: 'Categoria' }, { key: 'valor', label: 'Valor' }, { key: 'pago', label: 'Pago em' }, { key: 'status', label: 'Status' }], rows: d.map((e) => ({ venc: formatDate(e.due_date), desc: e.description, forn: e.supplier?.name ?? '', cat: e.category?.name ?? '', valor: brl(e.amount), pago: formatDate(e.paid_on), status: e.status })) } } },
-  { id: 'fluxo', group: 'Financeiro', title: 'Fluxo de caixa mensal', roles: ['direcao', 'financeiro'], filters: ['period'], run: async (f) => {
+  { id: 'fluxo', group: 'Financeiro', title: 'Fluxo de caixa mensal', roles: ['direcao'], filters: ['period'], run: async (f) => {
     const [p, e] = await Promise.all([
       fetchAll<Row>((a, b) => period(supabase.from('payments').select('paid_on, amount'), 'paid_on', f).range(a, b)),
       fetchAll<Row>((a, b) => period(supabase.from('expenses').select('paid_on, amount').eq('status', 'pago'), 'paid_on', f).range(a, b)),
@@ -65,7 +65,7 @@ const DEFS: Def[] = [
     const m: Record<string, { en: number; sa: number }> = {}; p.forEach((x) => { (m[ym(x.paid_on)] ??= { en: 0, sa: 0 }).en += Number(x.amount) }); e.forEach((x) => { (m[ym(x.paid_on)] ??= { en: 0, sa: 0 }).sa += Number(x.amount) })
     let acc = 0
     return { cols: [{ key: 'mes', label: 'Mês' }, { key: 'en', label: 'Entradas' }, { key: 'sa', label: 'Saídas' }, { key: 'sal', label: 'Saldo' }, { key: 'acu', label: 'Acumulado' }], rows: Object.keys(m).sort().map((k) => { const s = m[k].en - m[k].sa; acc += s; return { mes: `${MONTHS[Number(k.slice(5)) - 1]}/${k.slice(0, 4)}`, en: brl(m[k].en), sa: brl(m[k].sa), sal: brl(s), acu: brl(acc) } }) } } },
-  { id: 'dre', group: 'Financeiro', title: 'Demonstrativo de receitas e despesas', roles: ['direcao', 'financeiro'], filters: ['period'], run: async (f) => {
+  { id: 'dre', group: 'Financeiro', title: 'Demonstrativo de receitas e despesas', roles: ['direcao'], filters: ['period'], run: async (f) => {
     const [i, p, e] = await Promise.all([
       fetchAll<Row>((a, b) => period(supabase.from('invoices').select('due_date, total').neq('status', 'cancelado'), 'due_date', f).range(a, b)),
       fetchAll<Row>((a, b) => period(supabase.from('payments').select('paid_on, amount'), 'paid_on', f).range(a, b)),
@@ -74,23 +74,23 @@ const DEFS: Def[] = [
     const m: Record<string, { pr: number; re: number; de: number }> = {}; const g = (k: string) => (m[k] ??= { pr: 0, re: 0, de: 0 })
     i.forEach((x) => (g(ym(x.due_date)).pr += Number(x.total))); p.forEach((x) => (g(ym(x.paid_on)).re += Number(x.amount))); e.forEach((x) => (g(ym(x.due_date)).de += Number(x.amount)))
     return { cols: [{ key: 'mes', label: 'Mês' }, { key: 'pr', label: 'Receita prevista' }, { key: 're', label: 'Receita recebida' }, { key: 'de', label: 'Despesas' }, { key: 'res', label: 'Resultado (recebido − despesas)' }], rows: Object.keys(m).sort().map((k) => ({ mes: `${MONTHS[Number(k.slice(5)) - 1]}/${k.slice(0, 4)}`, pr: brl(m[k].pr), re: brl(m[k].re), de: brl(m[k].de), res: brl(m[k].re - m[k].de) })) } } },
-  { id: 'por_turma', group: 'Financeiro', title: 'Receitas por turma', roles: ['direcao', 'financeiro'], filters: ['period'], run: async (f) => {
+  { id: 'por_turma', group: 'Financeiro', title: 'Receitas por turma', roles: ['direcao'], filters: ['period'], run: async (f) => {
     const d = await fetchAll<Row>((a, b) => period(supabase.from('payments').select('amount, paid_on, invoice:invoices(student:students(classes:classes(name)))'), 'paid_on', f).range(a, b))
     const m: Record<string, number> = {}; d.forEach((x) => { const k = x.invoice?.student?.classes?.name ?? 'Sem turma'; m[k] = (m[k] ?? 0) + Number(x.amount) })
     return { cols: [{ key: 'turma', label: 'Turma' }, { key: 'total', label: 'Recebido' }], rows: Object.entries(m).sort().map(([turma, t]) => ({ turma, total: brl(t) })) } } },
-  { id: 'por_forma', group: 'Financeiro', title: 'Receitas por forma de pagamento', roles: ['direcao', 'financeiro'], filters: ['period'], run: async (f) => {
+  { id: 'por_forma', group: 'Financeiro', title: 'Receitas por forma de pagamento', roles: ['direcao'], filters: ['period'], run: async (f) => {
     const d = await fetchAll<Row>((a, b) => period(supabase.from('payments').select('amount, method, paid_on'), 'paid_on', f).range(a, b))
     const m: Record<string, number> = {}; d.forEach((x) => (m[x.method] = (m[x.method] ?? 0) + Number(x.amount)))
     return { cols: [{ key: 'forma', label: 'Forma de pagamento' }, { key: 'total', label: 'Recebido' }], rows: Object.entries(m).map(([k, t]) => ({ forma: METHOD_LABEL[k], total: brl(t) })) } } },
-  { id: 'desp_cat', group: 'Financeiro', title: 'Despesas por categoria', roles: ['direcao', 'financeiro'], filters: ['period'], run: async (f) => {
+  { id: 'desp_cat', group: 'Financeiro', title: 'Despesas por categoria', roles: ['direcao'], filters: ['period'], run: async (f) => {
     const d = await fetchAll<Row>((a, b) => period(supabase.from('expenses').select('amount, due_date, category:expense_categories(name)').neq('status', 'cancelado'), 'due_date', f).range(a, b))
     const m: Record<string, number> = {}; d.forEach((x) => { const k = x.category?.name ?? 'Sem categoria'; m[k] = (m[k] ?? 0) + Number(x.amount) })
     return { cols: [{ key: 'cat', label: 'Categoria' }, { key: 'total', label: 'Total' }], rows: Object.entries(m).sort().map(([cat, t]) => ({ cat, total: brl(t) })) } } },
-  { id: 'hist_aluno', group: 'Financeiro', title: 'Histórico financeiro por aluno', roles: DSF, filters: ['student'], run: async (f) => {
+  { id: 'hist_aluno', group: 'Financeiro', title: 'Histórico financeiro por aluno', roles: ['direcao'], filters: ['student'], run: async (f) => {
     if (!f.studentId) throw new Error('Selecione o aluno.')
     const d = await fetchAll<Row>((a, b) => supabase.from('invoices').select('*, payments(amount, paid_on, method)').eq('student_id', f.studentId).order('competence').range(a, b))
     return { cols: [{ key: 'comp', label: 'Competência' }, { key: 'venc', label: 'Vencimento' }, { key: 'valor', label: 'Valor' }, { key: 'pago', label: 'Pago' }, { key: 'pgto', label: 'Pagamentos' }, { key: 'status', label: 'Situação' }], rows: d.map((i) => ({ comp: `${i.competence.slice(5, 7)}/${i.competence.slice(0, 4)}`, venc: formatDate(i.due_date), valor: brl(i.total), pago: brl(paidOf(i)), pgto: (i.payments ?? []).map((p: Row) => `${formatDate(p.paid_on)} ${METHOD_LABEL[p.method]}`).join('; '), status: INVOICE_LABEL[derivedInvoiceStatus(i.status, i.due_date)] })) } } },
-  { id: 'comparativo', group: 'Financeiro', title: 'Comparativo entre meses e anos (receita recebida)', roles: ['direcao', 'financeiro'], filters: ['period'], run: async (f) => {
+  { id: 'comparativo', group: 'Financeiro', title: 'Comparativo entre meses e anos (receita recebida)', roles: ['direcao'], filters: ['period'], run: async (f) => {
     const y = Number((f.to || todayISO()).slice(0, 4)); const d = await fetchAll<Row>((a, b) => supabase.from('payments').select('paid_on, amount').gte('paid_on', `${y - 1}-01-01`).lte('paid_on', `${y}-12-31`).range(a, b))
     const cur = Array(12).fill(0), prev = Array(12).fill(0); d.forEach((x) => { const yy = Number(x.paid_on.slice(0, 4)), mm = Number(x.paid_on.slice(5, 7)) - 1; (yy === y ? cur : prev)[mm] += Number(x.amount) })
     return { cols: [{ key: 'mes', label: 'Mês' }, { key: 'a', label: String(y - 1) }, { key: 'b', label: String(y) }, { key: 'v', label: 'Variação' }], rows: MONTHS.map((m, i) => ({ mes: m, a: brl(prev[i]), b: brl(cur[i]), v: prev[i] ? `${num(((cur[i] - prev[i]) / prev[i]) * 100)}%` : '—' })) } } },
